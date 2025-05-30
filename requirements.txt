@@ -7,3 +7,4 @@ vreg
 TotalSegmentator
 torch
 monai==1.3.2
+dbdicom

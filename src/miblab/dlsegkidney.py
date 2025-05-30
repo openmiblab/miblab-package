@@ -236,7 +236,7 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         nib.save(nii_fat, os.path.join(temp_folder_data_to_test, 'Dixon_999_0003.nii.gz'))
 
 
-        # Infere water dominant map
+        # Infere kidney masks
         predictor.predict_from_files(
             temp_folder_data_to_test,
             temp_folder_results, 
