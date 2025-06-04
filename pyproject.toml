@@ -6,7 +6,7 @@ requires = ['setuptools>=61.2']
 
 [project]
 name = "miblab"
-version = "0.0.12"
+version = "0.0.13"
 dependencies = [
   'importlib-resources>=1.1.0',
   'tqdm', 
@@ -56,10 +56,14 @@ data = [
   'osfclient', 
 ]
 dlseg = [
+  'requests',
+  'osfclient',
   'vreg',
   'TotalSegmentator',
   'torch',
   "monai==1.3.2",
+  'nibabel',
+  'scipy',
 ]
 
 [tool.setuptools]

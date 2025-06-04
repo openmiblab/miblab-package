@@ -19,7 +19,6 @@ else:
 try:
     from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
     nnunetv2 = True
-
 except ImportError:
     nnunetv2 = False
 
@@ -28,6 +27,12 @@ try:
     torch_installed = True
 except ImportError:
     torch_installed = False
+
+try:
+    import nibabel as nib
+    nib_installed = True
+except ImportError:
+    nib_installed = False
 
 MODEL = 'nnunet_kidney_fatwater_v1.zip'
 MODEL_DOI = "15356746"
@@ -75,6 +80,11 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
     if not nnunetv2:
         raise ImportError(
             'nnunetv2 is not installed. Please install it with "pip install nnunetv2".'
+            'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
+        )
+    if not nib_installed:
+        raise ImportError(
+            'nibabel is not installed. Please install it with "pip install nibabel".'
             'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
         )
 

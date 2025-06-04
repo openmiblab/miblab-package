@@ -3,7 +3,6 @@ import sys
 
 import numpy as np
 import scipy.ndimage as ndi
-import nibabel as nib
 
 from miblab.data import zenodo_fetch
 from miblab.data import clear_cache_datafiles
@@ -21,7 +20,6 @@ try:
     from monai.networks.nets.unetr import UNETR
     from monai.inferers import sliding_window_inference
     monai_installed = True
-
 except ImportError:
     monai_installed = False
 
@@ -32,11 +30,22 @@ except ImportError:
     torch_installed = False
 
 try:
+    import nibabel as nib
+    nib_installed = True
+except ImportError:
+    nib_installed = False
+
+try:
     from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
     nnunetv2 = True
-
 except ImportError:
     nnunetv2 = False
+
+try:
+    import scipy.ndimage as ndi
+    scipy_installed = True
+except ImportError:
+    scipy_installed = False
 
 
 def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clear_cache = False, verbose=False):
@@ -86,21 +95,21 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         [0 1 1 ... 0 0 0]
     """
 
+    if not torch_installed:
+        raise ImportError(
+            'torch is not installed. Please install it with "pip install torch".'
+            'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
+        )
+    if not monai_installed:
+        raise ImportError(
+            'totalsegmentator is not installed. Please install it with "pip install totalsegmentator".'
+            'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
+        )
+
     if model == 'unetr':
 
         MODEL = 'UNETR_kidneys_v2.pth'
         MODEL_DOI = "15521814"
-
-        if not torch_installed:
-            raise ImportError(
-                'torch is not installed. Please install it with "pip install torch".'
-                'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
-            )
-        if not monai_installed:
-            raise ImportError(
-                'totalsegmentator is not installed. Please install it with "pip install totalsegmentator".'
-                'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
-            )
 
         if verbose:
             print('Downloading model..')
@@ -173,14 +182,14 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         MODEL = 'nnunet_kidneys_v2.zip'
         MODEL_DOI = "15328218"
 
-        if not torch_installed:
+        if not nib_installed:
             raise ImportError(
-                'torch is not installed. Please install it with "pip install torch".'
+                'nibabel is not installed. Please install it with "pip install nibabel".'
                 'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
             )
-        if not nnunetv2:
+        if not scipy_installed:
             raise ImportError(
-                'nnunetv2 is not installed. Please install it with "pip install nnunetv2".'
+                'scipy is not installed. Please install it with "pip install scipy".'
                 'To install all dlseg options at once, install miblab as pip install miblab[dlseg].'
             )
 
