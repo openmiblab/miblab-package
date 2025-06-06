@@ -3,7 +3,6 @@ import sys
 import shutil
 
 import numpy as np
-import nibabel as nib
 
 from miblab.data import zenodo_fetch
 from miblab.data import clear_cache_datafiles
