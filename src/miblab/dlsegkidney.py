@@ -2,7 +2,6 @@ import os
 import sys
 
 import numpy as np
-import scipy.ndimage as ndi
 
 from miblab.data import zenodo_fetch
 from miblab.data import clear_cache_datafiles
