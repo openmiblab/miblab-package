@@ -48,6 +48,9 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
     `Zenodo <https://zenodo.org/records/15356746>`_
     under the hood this runs nnUNetPredictor (for more details `MIC-DKFZ Wiki <https://deepwiki.com/MIC-DKFZ/nnUNet>`_)
 
+    Note: To prevent issues with multiprocessing, ensure code is secured
+    by using 'if __name__ == "__main__":' as shown in the example.
+
     Args:
         input_array (numpy.ndarray): A 4D numpy array of shape 
             [x, y, z, contrast] representing the input medical image 
@@ -66,10 +69,11 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
 
         >>> import numpy as np
         >>> import miblab
-        >>> data = np.random.rand((128, 128, 30, 2))
-        >>> fatwatermap = miblab.idney_dixon_fat_water(data)
-        >>> print(fatwatermap['fat'].shape)
-        [128, 128, 30]
+        >>> if __name__ == "__main__":
+        >>>     data = np.random.rand(128, 128, 30, 2)
+        >>>     fatwatermap = miblab.kidney_dixon_fat_water(data)
+        >>>     print(fatwatermap['fat'].shape)
+        (128, 128, 30)
     """
     if not torch_installed:
         raise ImportError(
@@ -134,13 +138,21 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
     nii_in_ph = nib.Nifti1Image(input_array[...,1], affine)
     nib.save(nii_in_ph, os.path.join(temp_folder_data_to_test, 'Dixon_999_0001.nii.gz'))
 
-    # Infere water dominant map
-    predictor.predict_from_files(
-        temp_folder_data_to_test,
-        temp_folder_results, 
-        save_probabilities=False, 
-        overwrite=True
-    )
+    try:
+        # Infere water dominant map
+        predictor.predict_from_files(
+            temp_folder_data_to_test,
+            temp_folder_results, 
+            save_probabilities=False, 
+            overwrite=True
+        )
+    except RuntimeError as e:
+            raise RuntimeError(
+                f"{e} Alternatively, to prevent issues with multiprocessing," \
+                "please ensure that your code is secured using:" \
+                "'if __name__ == '__main__':'." \
+                "See example in API documentation."
+            )
 
     # Load the NIfTI file
     nifti_file = nib.load(os.path.join(temp_folder_results,'Dixon_999.nii.gz'))

@@ -62,7 +62,8 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         input_array (numpy.ndarray): A 4D numpy array of shape 
             [x, y, z, contrast] representing the input medical image 
             volume. The last index must contain out-phase, in-phase, 
-            water and fat images, in that order.
+            water and fat images, in that order. The data type of the
+            array must be of the type float32.
         model: 
             model = 'unetr' uses a pretrained UNETR-based model in MONAI, hosted on 
             `Zenodo <https://zenodo.org/records/15521814>`_
@@ -89,12 +90,17 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
 
         >>> import numpy as np
         >>> import miblab
-        >>> data = np.random.rand((128, 128, 30, 4))
+        >>> data = np.random.rand(128, 128, 30, 4).astype(np.float32)
         >>> mask = miblab.kidney_pc_dixon(data)
-        >>> print(mask['leftkidney'])
-        [0 1 1 ... 0 0 0]
+        >>> print(mask['leftkidney'].shape)
+        (128, 128, 30))
     """
 
+    if input_array.dtype != np.float32:
+        raise TypeError(
+            'input_array must be of dtype np.float32.'
+        )
+    
     if not torch_installed:
         raise ImportError(
             'torch is not installed. Please install it with "pip install torch".'
