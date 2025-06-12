@@ -96,6 +96,11 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         (128, 128, 30))
     """
 
+    if input_array.dtype != np.float32:
+        raise TypeError(
+            'input_array must be of dtype np.float32.'
+        )
+    
     if not torch_installed:
         raise ImportError(
             'torch is not installed. Please install it with "pip install torch".'
