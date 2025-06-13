@@ -47,7 +47,7 @@ except ImportError:
     scipy_installed = False
 
 
-def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clear_cache = False, verbose=False):
+def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear_cache = False, verbose=False):
 
     """
     Segment individual kidneys on post-contrast Dixon images.
@@ -88,9 +88,9 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
 
         >>> import numpy as np
         >>> import miblab
-        >>> data = np.random.rand((128, 128, 30, 4))
+        >>> data = np.random.rand(128, 128, 30, 4)
         >>> mask = miblab.kidney_pc_dixon(data)
-        >>> print(mask['leftkidney'])
+        >>> print(mask['kidney_left'])
         [0 1 1 ... 0 0 0]
     """
 
@@ -267,8 +267,8 @@ def kidney_pc_dixon (input_array,model='unetr', overlap=0.3, postproc=True, clea
         right_kidney=output_array[output_array == 1]
 
     kidneys = {
-        "leftkidney": left_kidney,
-        "rightkidney": right_kidney
+        "kidney_left": left_kidney,
+        "kidney_right": right_kidney
     }
 
     if clear_cache:

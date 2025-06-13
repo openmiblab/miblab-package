@@ -22,12 +22,13 @@ def test_kidney_pc_dixon():
 
     # Read DICOM data
     study = db.studies(folder)[0]
-    arrays = (
-        db.pixel_data(study + ['Dixon_post_contrast_out_phase']),
-        db.pixel_data(study + ['Dixon_post_contrast_in_phase']),
-        db.pixel_data(study + ['Dixon_post_contrast_water']),
-        db.pixel_data(study + ['Dixon_post_contrast_fat']),
-    )
+    series = [
+        'Dixon_post_contrast_out_phase', 
+        'Dixon_post_contrast_in_phase', 
+        'Dixon_post_contrast_water',
+        'Dixon_post_contrast_fat',
+    ]
+    arrays = [db.pixel_data(study + [s]) for s in series]
     array = np.stack(arrays, axis=-1)
 
     mask = kidney_pc_dixon(array, model='unetr', verbose=True)

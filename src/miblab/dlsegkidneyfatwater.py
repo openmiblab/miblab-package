@@ -66,8 +66,8 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
 
         >>> import numpy as np
         >>> import miblab
-        >>> data = np.random.rand((128, 128, 30, 2))
-        >>> fatwatermap = miblab.idney_dixon_fat_water(data)
+        >>> data = np.random.rand(128, 128, 30, 2)
+        >>> fatwatermap = miblab.kidney_dixon_fat_water(data)
         >>> print(fatwatermap['fat'].shape)
         [128, 128, 30]
     """
@@ -109,7 +109,7 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
         device=torch.device(device_str),
         verbose=False,
         verbose_preprocessing=False,
-        allow_tqdm=True
+        allow_tqdm=True,
     )
 
     # direct to "nnUNetTrainer__nnUNetPlans__3d_fullres"
@@ -138,8 +138,10 @@ def kidney_dixon_fat_water(input_array, clear_cache =False, verbose=False):
     predictor.predict_from_files(
         temp_folder_data_to_test,
         temp_folder_results, 
+        num_processes_preprocessing=1,           # Limit RAM usage
+        num_processes_segmentation_export=1,     # Also reduce RAM
         save_probabilities=False, 
-        overwrite=True
+        overwrite=True,
     )
 
     # Load the NIfTI file

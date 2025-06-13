@@ -22,11 +22,8 @@ def test_kidney_dixon_fat_water():
 
     # Read DICOM data
     study = db.studies(folder)[0]
-    arrays = (
-        db.pixel_data(study + ['Dixon_post_contrast_out_phase']),
-        db.pixel_data(study + ['Dixon_post_contrast_in_phase']),
-    )
-
+    series = ['Dixon_post_contrast_out_phase', 'Dixon_post_contrast_in_phase']
+    arrays = [db.pixel_data(study + [s]) for s in series]
     array = np.stack(arrays, axis=-1)
 
     fatwatermap = kidney_dixon_fat_water(array, verbose=True, clear_cache =True)
