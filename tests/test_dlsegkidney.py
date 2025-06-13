@@ -32,10 +32,10 @@ def test_kidney_pc_dixon():
     array = np.stack(arrays, axis=-1)
 
     mask = kidney_pc_dixon(array, model='unetr', verbose=True)
-    assert np.sum(mask['leftkidney']) == 62284
+    assert np.sum(mask['kidney_left']) == 62284
 
     mask = kidney_pc_dixon(array, model='nnunet', verbose=True)
-    assert np.sum(mask['leftkidney']) == 79285
+    assert np.sum(mask['kidney_left']) == 79285
 
     shutil.rmtree(tmp_dir)
 
