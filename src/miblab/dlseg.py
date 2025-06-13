@@ -14,11 +14,15 @@ try:
 except ImportError:
     vreg_installed = False
 
+# from totalsegmentator.config import setup_nnunet
+# setup_nnunet()
+
 
 TMPPATH = os.getcwd()
 
 
 def _totseg(vol, cutoff=None, task='total', roi_subset=None, **kwargs):
+
 
     print('Saving source as nifti..')
     nifti_file = os.path.join(TMPPATH, 'source.nii.gz')
