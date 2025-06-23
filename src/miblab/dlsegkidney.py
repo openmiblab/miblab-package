@@ -47,7 +47,7 @@ except ImportError:
     scipy_installed = False
 
 
-def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear_cache = False, verbose=False):
+def kidney_pc_dixon(input_array, model='unetr', device=None, overlap=0.3, postproc=True, clear_cache = False, verbose=False):
 
     """
     Segment individual kidneys on post-contrast Dixon images.
@@ -56,18 +56,21 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
     in-phase images, water maps, and fat maps.
 
 
-
     Args:
         input_array (numpy.ndarray): A 4D numpy array of shape 
             [x, y, z, contrast] representing the input medical image 
             volume. The last index must contain out-phase, in-phase, 
             water and fat images, in that order.
-        model: 
+        model (str): 
             model = 'unetr' uses a pretrained UNETR-based model in MONAI, hosted on 
             `Zenodo <https://zenodo.org/records/15521814>`_
             model = 'nnunet' uses a pretrained nnUNet-based model, hosted on 
             `Zenodo <https://zenodo.org/records/15328218>`_
             under the hood this runs nnUNetPredictor (for more details `MIC-DKFZ Wiki <https://deepwiki.com/MIC-DKFZ/nnUNet>`_)
+        device (str):
+            processor on which to deply the computation. If this is not 
+            provided, this defaults to "cuda" (if this is available) and 
+            "cpu" otherwise.
         overlap (float): only valid for model = 'unetr' defines the amount of overlap between 
             adjacent sliding window patches during inference. A 
             higher value (e.g., 0.5) improves prediction smoothness 
@@ -110,8 +113,32 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
         MODEL = 'UNETR_kidneys_v2.pth'
         MODEL_DOI = "15521814"
 
+        # Format input array
+        # ------------------
+        # TODO: make this consistent for future training
+        # swap the last two indices because UNETR is trained 
+        # with opposed-phase/in-phase/fat/water
+        input_array = input_array[..., [0, 1, 3, 2]]
+
+        # from (x,y,z,c) to (c,y,x,z)
+        input_array = np.transpose(input_array, (3, 0, 1, 2)) 
+
+        # Normalize data
+        input_array_out   = (input_array[0,...]-np.average(input_array[0,...]))/np.std(input_array[0,...])
+        input_array_in    = (input_array[1,...]-np.average(input_array[1,...]))/np.std(input_array[1,...])
+        input_array_water = (input_array[2,...]-np.average(input_array[2,...]))/np.std(input_array[2,...])
+        input_array_fat   = (input_array[3,...]-np.average(input_array[3,...]))/np.std(input_array[3,...])
+
+        input_array = np.stack((input_array_out, input_array_in, input_array_water, input_array_fat), axis=0)
+        # Convert to NCHW[D] format: (1,c,y,x,z)
+        # NCHW[D] stands for: batch N, channels C, height H, width W, depth D
+        input_array = input_array.transpose(0,2,1,3) # from (x,y,z) to (y,x,z)
+        input_array = np.expand_dims(input_array, axis=(0))
+        input_array = input_array.astype(np.float32)
+
+
         if verbose:
-            print('Downloading model..')
+            print('(Down)loading model..')
 
         temp_dir = importlib_resources.files('miblab.datafiles')
         weights_path = zenodo_fetch(MODEL, temp_dir, MODEL_DOI)
@@ -121,7 +148,10 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
 
         # Setup device
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        device_str = "cuda" if torch.cuda.is_available() else "cpu"
+        if device is None:
+            device_str = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            device_str = device
         device = torch.device(device_str)
 
         # Define model architecture
@@ -137,27 +167,14 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
             norm_name="instance",
             res_block=True,
             dropout_rate=0.0,
-        ).to(device)
-
-        input_array = np.transpose(input_array, (3, 0, 1, 2)) # from (x,y,z,c) to (c,y,x,z)
-
-        # Normalize data
-        input_array_out   = (input_array[0,...]-np.average(input_array[0,...]))/np.std(input_array[0,...])
-        input_array_in    = (input_array[1,...]-np.average(input_array[1,...]))/np.std(input_array[1,...])
-        input_array_water = (input_array[2,...]-np.average(input_array[2,...]))/np.std(input_array[2,...])
-        input_array_fat   = (input_array[3,...]-np.average(input_array[3,...]))/np.std(input_array[3,...])
-
-        input_array = np.stack((input_array_out, input_array_in, input_array_water, input_array_fat), axis=0)
-        # Convert to NCHW[D] format: (1,c,y,x,z)
-        # NCHW[D] stands for: batch N, channels C, height H, width W, depth D
-        input_array = input_array.transpose(0,2,1,3) # from (x,y,z) to (y,x,z)
-        input_array = np.expand_dims(input_array, axis=(0))
+        )
+        model.to(device)
 
         # Convert to tensor
-        input_tensor = torch.tensor(input_array)
+        input_tensor = torch.tensor(input_array).to(device)
 
         # Load model weights
-        weights = torch.load(weights_path, map_location=device)
+        weights = torch.load(weights_path, map_location=device, weights_only=True)
         model.load_state_dict(weights)
         model.eval() 
 
@@ -193,7 +210,7 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
             )
 
         if verbose:
-            print('Downloading model..')
+            print('(Down)loading model..')
 
         temp_dir = importlib_resources.files('miblab.datafiles')
         weights_path = zenodo_fetch(MODEL, temp_dir, MODEL_DOI,extract=True)
@@ -201,9 +218,13 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
         if verbose:
             print('Applying model to data..')
 
-        # Check is device has cuda (to speed up inference)
+        # Setup device
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        device_str = "cuda" if torch.cuda.is_available() else "cpu"
+        if device is None:
+            device_str = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            device_str = device
+        device = torch.device(device_str)
 
         # Setup device
         predictor = nnUNetPredictor(
@@ -211,7 +232,7 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
             use_gaussian=True,
             use_mirroring=False,
             perform_everything_on_device=True,
-            device=torch.device(device_str),
+            device=device,
             verbose=False,
             verbose_preprocessing=False,
             allow_tqdm=True
@@ -243,8 +264,7 @@ def kidney_pc_dixon(input_array,model='unetr', overlap=0.3, postproc=True, clear
         nii_fat = nib.Nifti1Image(input_array[...,3], affine)
         nib.save(nii_fat, os.path.join(temp_folder_data_to_test, 'Dixon_999_0003.nii.gz'))
 
-
-        # Infere kidney masks
+        # Infer kidney masks
         predictor.predict_from_files(
             temp_folder_data_to_test,
             temp_folder_results, 
