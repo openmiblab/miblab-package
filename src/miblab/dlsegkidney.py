@@ -213,7 +213,7 @@ def kidney_pc_dixon(input_array, model='unetr', device=None, overlap=0.3, postpr
             print('(Down)loading model..')
 
         temp_dir = importlib_resources.files('miblab.datafiles')
-        weights_path = zenodo_fetch(MODEL, temp_dir, MODEL_DOI,extract=True)
+        weights_path = zenodo_fetch(MODEL, temp_dir, MODEL_DOI, extract=True)
 
         if verbose:
             print('Applying model to data..')
