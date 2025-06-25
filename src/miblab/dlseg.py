@@ -1,4 +1,7 @@
 import os
+import shutil
+import tempfile
+
 from tqdm import tqdm
 
 try:
@@ -18,19 +21,16 @@ except ImportError:
 # setup_nnunet()
 
 
-TMPPATH = os.getcwd()
-
-
 def _totseg(vol, cutoff=None, task='total', roi_subset=None, **kwargs):
 
+    temp_dir = tempfile.mkdtemp()
 
     print('Saving source as nifti..')
-    nifti_file = os.path.join(TMPPATH, 'source.nii.gz')
+    nifti_file = os.path.join(temp_dir, 'source.nii.gz')
     vreg.write_nifti(vol, nifti_file)
 
     print('Segmenting organs..')
-    totalsegmentator(nifti_file, TMPPATH, task=task, roi_subset=roi_subset, **kwargs)
-    os.remove(nifti_file)
+    totalsegmentator(nifti_file,  temp_dir, task=task, roi_subset=roi_subset, **kwargs)
 
     if roi_subset is None:
         roi_set = list(map_to_binary.class_map[task].values())
@@ -39,7 +39,7 @@ def _totseg(vol, cutoff=None, task='total', roi_subset=None, **kwargs):
 
     mask = {}
     for roi in tqdm(roi_set, desc='Reading results..'):
-        roifile = os.path.join(TMPPATH, roi + '.nii.gz')
+        roifile = os.path.join(temp_dir, roi + '.nii.gz')
         v = vreg.read_nifti(roifile)
         if cutoff is not None:
             values = v.values
@@ -47,7 +47,8 @@ def _totseg(vol, cutoff=None, task='total', roi_subset=None, **kwargs):
             values[values <= cutoff] = 0
             v.set_values(values)
         mask[roi] = v
-        os.remove(roifile) 
+    
+    shutil.rmtree(temp_dir) 
 
     return mask
 
