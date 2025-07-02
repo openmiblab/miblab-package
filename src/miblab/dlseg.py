@@ -3,6 +3,7 @@ import shutil
 import tempfile
 
 from tqdm import tqdm
+import numpy as np
 
 try:
     from totalsegmentator import map_to_binary
@@ -96,7 +97,12 @@ def totseg(vol, cutoff=None, **kwargs):
         )
 
     if not isinstance(vol, list):
-        return _totseg(vol, cutoff, **kwargs)
+        total = _totseg(vol, cutoff, **kwargs)
+        # Convert to label
+        label_img = np.zeros(total['kidney_left'].shape, dtype=np.int16)
+        for j, roi in enumerate(total):
+            label_img += (j+1) * total[roi].values.astype(np.int16)
+        return vreg.volume(label_img, vol.affine)
 
     total = {}
     for v in tqdm(vol, desc='Segmenting volumes..'):
@@ -116,4 +122,10 @@ def totseg(vol, cutoff=None, **kwargs):
         v.set_values(values)
         total[roi] = v
 
-    return total
+    # Convert to label
+    label_img = np.zeros(total['kidney_left'].shape, dtype=np.int16)
+    for j, roi in enumerate(total):
+        label_img += (j+1) * total[roi].values.astype(np.int16)
+
+    # Return volume
+    return vreg.volume(label_img, vol.affine)
