@@ -491,7 +491,7 @@ def rat_fetch(
 
     # ── resolve study IDs ───────────────────────────────────────────────────
     dataset = (dataset or "all").lower()
-    valid_ids = [f"s{i:02d}" for i in range(1, 19)]     # S01 … S18
+    valid_ids = [f"s{i:02d}" for i in range(1, 16)]   # S01 … S15 only
     if dataset == "all":
         studies = valid_ids
     elif dataset in valid_ids:

@@ -38,7 +38,7 @@ import requests
 from miblab import rat_fetch
 from miblab.data import _have_dicom2nifti   # feature-flag published by the lib
 
-#  Helpers                                                                    #
+#  Helpers                                                                    
 
 def _zenodo_online() -> bool:
     """
@@ -54,7 +54,7 @@ def _zenodo_online() -> bool:
         return False
 
 
-#  Pytest markers                                                             #
+#  Pytest markers                                                             
 
 pytestmark = [
     pytest.mark.network,
@@ -64,7 +64,7 @@ pytestmark = [
     ),
 ]
 
-#  Parameterised smoke / pipeline test                                        #
+#  Parameterised smoke / pipeline test                                        
 
 @pytest.mark.parametrize(
     "dataset, unzip, convert",
