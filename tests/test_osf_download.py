@@ -8,10 +8,11 @@ PROJECT_ID = "u7a6f"                  # public OSF project ID
 DATASET = "Challenge_Guideline"       # dataset (folder) inside the project
 LOCAL_DIR = "test_download"           # where files will be downloaded
 
-# Check if OSF is reachable
-OSF_PING_URL = f"https://api.osf.io/v2/nodes/{PROJECT_ID}"
+# Quick health-check URL to see if OSF is online
+PING_URL = f"https://api.osf.io/v2/nodes/{PROJECT_ID}"
 try:
-    OSF_UP = requests.head(OSF_PING_URL, timeout=5).status_code == 200
+    r = requests.get(PING_URL, timeout=5)          # GET instead of HEAD
+    OSF_UP = r.status_code in (200, 401, 403, 405)
 except requests.exceptions.RequestException:
     OSF_UP = False
 
