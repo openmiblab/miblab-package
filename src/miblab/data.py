@@ -459,6 +459,11 @@ def _convert_dicom_to_nifti(source_dir: Path, output_dir: Path) -> None:
     output_dir
         Destination directory.  Created if missing.
         Each converted series is written as ``series_<UID>.nii.gz``.
+    
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> _convert_dicom_to_nifti(Path("S01/Rat03/Day1/dicom"), Path("S01_nifti/Rat03/Day1"))
     """
 
     if not _have_dicom2nifti:
@@ -488,7 +493,7 @@ def _relax_dicom2nifti_validators() -> None:
     No error is raised when *dicom2nifti* is not installed; the caller
     should already have checked the `_have_dicom2nifti` feature-flag.
     """
-    
+
     try:
         import dicom2nifti.settings as _dset          # type: ignore
     except ModuleNotFoundError:
