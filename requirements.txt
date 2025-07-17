@@ -10,3 +10,5 @@ monai==1.3.2
 nibabel
 scipy
 dbdicom
+pydicom<3               # needed by dicom2nifti & dbdicom (keep <3 for compatibility)
+dicom2nifti>=2.4.5      # DICOM ➜ NIfTI conversion utility

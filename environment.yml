@@ -1,0 +1,49 @@
+name: miblab-dev          # activate with:  conda activate miblab-dev
+channels:
+  - conda-forge           # universal (arm64 + x86) binaries
+  - pytorch               # official torch wheels for conda
+  - defaults              # kept for completeness
+dependencies:
+  # ── core runtime ────────────────────────────────────────────
+  - python = 3.11
+  - pip                   # keep at top so later deps can fall back to pip
+  - importlib-resources
+  - requests
+  - tqdm
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib-base
+  - scikit-image
+
+  # ── DICOM / NIfTI toolchain ────────────────────────────────
+  - pydicom >=2.4,<3          # pin keeps dicom2nifti happy
+  - dicom2nifti >=2.4.5
+  - nibabel
+
+  # ── networking / data portals ──────────────────────────────
+  - osfclient
+
+  # ── testing / QA ───────────────────────────────────────────
+  - pytest
+  - pytest-cov
+  - pytest-mock
+  - coverage
+
+  # ── ML / deep-learning stack ───────────────────────────────
+  # The conda-forge build of PyTorch runs:
+  #   • CPU on Intel/AMD
+  #   • CPU + Metal (MPS) on Apple-silicon Macs
+  - pytorch =2.2         # adjust if you need a different version
+  - torchvision
+  - torchaudio
+  - monai =1.3.2         # matches your requirements.txt
+
+  # ── pip-only packages ───────────────────────────────────────
+  - pip:
+      # publishing / docs
+      - pylatex
+      # medical imaging helpers
+      - dbdicom
+      - vreg
+      - TotalSegmentator   # heavy – installs its own model weights on first run
