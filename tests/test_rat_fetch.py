@@ -30,12 +30,11 @@ from __future__ import annotations          # postpone annotation evaluation
 
 import socket                               # light-weight DNS probe
 from pathlib import Path
-from typing import List
 
 import pytest
 import requests
 
-from miblab import rat_fetch                # function under test
+from miblab.data import rat_fetch                # function under test
 from miblab.data import _have_dicom2nifti   # feature-flag exposed by the lib
 
 
@@ -126,3 +125,7 @@ def test_rat_fetch(
         assert nii_found, "No NIfTI files produced"
 
     print(f"[OK] rat_fetch(dataset={dataset!r}, unzip={unzip}, convert={convert}) passed.")
+
+
+if __name__ == "__main__":
+    test_rat_fetch("S01", True, True, Path("/tmp"))
