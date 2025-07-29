@@ -128,4 +128,5 @@ def test_rat_fetch(
 
 
 if __name__ == "__main__":
-    test_rat_fetch("S01", True, True, Path("/tmp"))
+    out_dir = Path.cwd() / "rat_data"          # e.g. ./rat_data
+    test_rat_fetch("S01", True, True, out_dir)
