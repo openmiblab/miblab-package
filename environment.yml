@@ -17,8 +17,8 @@ dependencies:
   - scikit-image
 
   # ── DICOM / NIfTI toolchain ────────────────────────────────
-  - pydicom >=2.4,<3          # pin keeps dicom2nifti happy
-  - dicom2nifti >=2.4.5
+  - pydicom>=2.2,<3          # pin keeps dicom2nifti happy
+  - dicom2nifti==2.3.4
   - nibabel
 
   # ── networking / data portals ──────────────────────────────

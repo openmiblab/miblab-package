@@ -55,7 +55,7 @@ data = [
   'requests',
   'osfclient', 
   'pydicom<3',
-  'dicom2nifti>=2.4.5',
+  'dicom2nifti==2.3.4',
 ]
 dlseg = [
   'requests',
