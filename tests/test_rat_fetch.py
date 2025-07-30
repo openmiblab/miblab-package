@@ -27,6 +27,7 @@ Assertions
 """
 
 from __future__ import annotations          # postpone annotation evaluation
+from typing import List
 
 import socket                               # light-weight DNS probe
 from pathlib import Path
