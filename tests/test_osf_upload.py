@@ -4,12 +4,13 @@ import requests
 from miblab import osf_upload
 
 # Public OSF project used for the test
-PROJECT = "un5ct"
+PROJECT_ID = "un5ct"
 
 # Quick health-check URL to see if OSF is online
-PING_URL = f"https://api.osf.io/v2/nodes/{PROJECT}"
+PING_URL = f"https://api.osf.io/v2/nodes/{PROJECT_ID}"
 try:
-    OSF_UP = requests.head(PING_URL, timeout=5).status_code == 200
+    r = requests.get(PING_URL, timeout=5)          # GET instead of HEAD
+    OSF_UP = r.status_code in (200, 401, 403, 405)
 except requests.exceptions.RequestException:
     OSF_UP = False
 
@@ -40,7 +41,7 @@ def test_osf_upload_file():
         osf_upload(
             folder=folder,
             dataset=dataset,
-            project=PROJECT,
+            project=PROJECT_ID,
             token=token,
             verbose=True,
             overwrite=True,
