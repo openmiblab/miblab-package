@@ -3,8 +3,9 @@ import shutil
 
 import dbdicom as db
 import numpy as np
+import vreg
 
-from miblab import kidney_pc_dixon
+from miblab import kidney_pc_dixon, kidney_pc_dixon_unetr
 from miblab import zenodo_fetch
 
 
@@ -30,12 +31,13 @@ def test_kidney_pc_dixon():
     ]
     arrays = [db.pixel_data(study + [s]) for s in series]
     array = np.stack(arrays, axis=-1)
+    vol = db.volume(study + [series[0]])
 
-    mask = kidney_pc_dixon(array, model='unetr', verbose=True)
-    assert np.sum(mask['kidney_left']) == 62284
+    mask = kidney_pc_dixon_unetr(vreg.volume(array, vol.affine), verbose=True)
+    assert np.sum(mask.values==1) == 73871
 
-    mask = kidney_pc_dixon(array, model='nnunet', verbose=True)
-    assert np.sum(mask['kidney_left']) == 79285
+    mask = kidney_pc_dixon(array, verbose=True)
+    assert np.sum(mask==1) == 79285
 
     shutil.rmtree(tmp_dir)
 
