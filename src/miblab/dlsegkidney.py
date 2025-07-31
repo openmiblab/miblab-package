@@ -79,7 +79,7 @@ def kidney_pc_dixon_unetr(input_vol, device=None, overlap=0.3, postproc=True, cl
 
     Returns:
         vreg.Volume3D: 
-            A volume with a kidneys as label array.
+            A volume with a kidneys as label array (left=1, right=2).
     """
 
     if not torch_installed:
@@ -244,7 +244,7 @@ def kidney_pc_dixon(input_array, device=None, postproc=True, clear_cache = False
 
     Returns:
         numpy.ndarray: 
-            Label image
+            Label image (left kidney=1, right kidney=2)
 
     """
 

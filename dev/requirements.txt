@@ -4,3 +4,4 @@ pycodestyle
 build
 twine
 pytest
+dbdicom
