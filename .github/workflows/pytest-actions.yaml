@@ -23,17 +23,15 @@ jobs:
       - name: Install packages
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r tests/requirements.txt
-          pip install .
-          pip list
-
+          pip install -r dev/requirements.txt
+          
       - name: Install miblab
         run: |
           pip install -e .[report,data,dlseg]
+          pip list
 
       - name: Test with pytest
-        run: pytest --cov=miblab --cov-report=xml
+        run: pytest --cov=miblab-package --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
