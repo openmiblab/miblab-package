@@ -20,20 +20,13 @@ View > Command Palette > Python select interpreter -> enter interpreter path
 Installation
 ------------
 
-Install vreg from source:
+Install miblab from source:
 
 >>> pip install -e path\to\miblab-package
-
-Install tests requirements:
-
->>> pip install -r tests/requirements.txt
 
 Install dev requirements:
 
 >>> pip install -r dev/requirements.txt
-
-To leave:
->>> deactivate
 
 
 Enforce PEP8

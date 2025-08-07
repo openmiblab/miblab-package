@@ -1,6 +1,0 @@
-pytest
-pytest-cov
-dbdicom
-torch
-monai==1.3.2
-dipy
