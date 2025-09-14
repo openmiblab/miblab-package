@@ -4,6 +4,7 @@ import tempfile
 
 from tqdm import tqdm
 import numpy as np
+import vreg
 
 try:
     from totalsegmentator import map_to_binary
@@ -70,9 +71,10 @@ def totseg(vol, cutoff=None, **kwargs):
             python API <https://github.com/wasserth/TotalSegmentator/tree/master?tab=readme-ov-file#totalsegmentator>`_.
 
     Returns:
-        dict: 
-            dictionary with keys the mask names (ROI labels) 
-            and values the corresponding vreg.Volume3D objects.
+        vreg.Volume3D: 
+            A vreg volume with the label image. See 
+            `totalsegmentator documentation <https://github.com/wasserth/TotalSegmentator/blob/master/totalsegmentator/map_to_binary.py>`_ 
+            for a dictionary mapping labels to anatomical structures.
 
     Example:
         Use a machine with a cpu to run the task 'total_mr' on a 
@@ -81,9 +83,8 @@ def totseg(vol, cutoff=None, **kwargs):
         >>> import miblab
         >>> import vreg
         >>> vol = vreg.read_nifti('path/to/volume.nii.gz')
-        >>> mask = miblab.totseg(vol, cutoff=0.01, task='total_mr', device='cpu')
-        >>> print(mask['liver'].values)
-        [0 1 1 ... 0 0 0]
+        >>> label = miblab.totseg(vol, cutoff=0.01, task='total_mr', device='cpu')
+        >>> vreg.write_nifti(label, 'path/to/label.nii.gz')
     """
     if not vreg_installed:
         raise ImportError(
@@ -128,4 +129,4 @@ def totseg(vol, cutoff=None, **kwargs):
         label_img += (j+1) * total[roi].values.astype(np.int16)
 
     # Return volume
-    return vreg.volume(label_img, vol.affine)
+    return vreg.volume(label_img, vol[0].affine)
