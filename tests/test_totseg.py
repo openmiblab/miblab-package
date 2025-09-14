@@ -36,7 +36,7 @@ def test_totseg():
         device='cpu',
         fastest=True,
     )
-    assert float(np.sum(mask['kidney_left'].values)) == 71028
+    assert float(np.sum(mask.values==1)) == 71028
 
     shutil.rmtree(tmp_dir)
 
