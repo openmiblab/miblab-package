@@ -152,3 +152,7 @@ cython_debug/
 
 #Mac DS Store files
 .DS_Store
+
+# Data download
+rat_data/
+rat_data_nifti/

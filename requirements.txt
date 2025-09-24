@@ -12,3 +12,4 @@ scipy
 dbdicom
 pydicom<3               # needed by dicom2nifti & dbdicom (keep <3 for compatibility)
 dicom2nifti==2.3.4      # DICOM ➜ NIfTI conversion utility
+pytest

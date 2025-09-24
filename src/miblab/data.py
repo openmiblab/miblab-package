@@ -50,7 +50,7 @@ import_error = not (_have_requests and _have_tqdm)
 DOI = {
     'MRR': "15285017",    
     'TRISTAN': "15301607",
-    'RAT': "15747417",
+    'RAT': "17178063",
 }
 
 # miblab datasets
@@ -65,6 +65,47 @@ DATASETS = {
     'tristan_rats_healthy_reproducibility.dmr.zip': {'doi': DOI['TRISTAN']},
     'tristan_rats_healthy_six_drugs.dmr.zip': {'doi': DOI['TRISTAN']},
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADDED: Study groups + helpers 
+# ─────────────────────────────────────────────────────────────────────────────
+#: Mapping of friendly **group names** to lists of study IDs.
+#: 
+#: Groups:
+#: - ``rifampicin_effect_size`` → S01, S02, S03, S04
+#: - ``six_compound``           → S05, S06, S07, S08, S09, S10, S12
+#: - ``field_strength``         → S13
+#: - ``chronic``                → S11, S14, S15
+#:
+#: These names are accepted by :pyfunc:`rat_fetch` in addition to single
+#: study IDs (e.g. ``"S03"``) and ``"all"``.
+_GROUPS = {
+    "rifampicin_effect_size": ["s01", "s02", "s03", "s04"],
+    "six_compound":           ["s05", "s06", "s07", "s08", "s09","s10", "s12"],
+    "field_strength":         ["s13"],
+    "chronic":                ["s11", "s14", "s15"],
+}
+
+def _norm_key(name: str | None) -> str:
+    """
+    Normalize user input to a token suitable for matching.
+
+    * Lowercase
+    * Replace any non-alphanumeric char with underscore
+    * Strip leading/trailing underscores
+
+    Examples
+    --------
+    >>> _norm_key("Six Compound")
+    'six_compound'
+    >>> _norm_key("Rifampicin-Effect-Size")
+    'rifampicin_effect_size'
+    """
+    if name is None:
+        return ""
+    return "".join(ch if ch.isalnum() else "_" for ch in name.lower()).strip("_")
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 def zenodo_fetch(dataset: str, folder: str, doi: str = None, filename: str = None,
                  extract: bool = False, verbose: bool = False):
@@ -241,12 +282,12 @@ def osf_fetch(dataset: str, folder: str, project: str = "un5ct", token: str = No
         str: Path to the local folder containing the downloaded data.
 
     Example:
-        >>> from miblab import osf_fetch
+        >>> from miblab.data import osf_fetch
         >>> osf_fetch('TRISTAN/RAT/bosentan_highdose/Sanofi', 'test_download')
     """
-    if import_error:
+    if import_error or not _have_osfclient:
         raise NotImplementedError(
-            "Please install miblab as pip install miblab[data] to use this function."
+            "Please install miblab[data] (includes osfclient, requests, tqdm) to use this function."
         )
 
     # Prepare local folder
@@ -389,6 +430,7 @@ def osf_upload(folder: str, dataset: str, project: str = "un5ct", token: str = N
             raise RuntimeError(f"Failed to upload file: {e}")
 
 #  Utilities
+#  Utilities
 def _unzip_nested(zip_path: str | Path, extract_to: str | Path,
                   *, keep_archives: bool = False) -> None:
     """
@@ -416,6 +458,15 @@ def _unzip_nested(zip_path: str | Path, extract_to: str | Path,
     * Corrupt inner archives are caught and logged to *stdout* but do
       **not** abort the entire operation.
 
+    Additional handling (added)
+    ---------------------------
+    * Skips macOS Finder metadata that may masquerade as ZIPs:
+      ``__MACOSX/`` folders and ``._<name>.zip`` files (resource forks).
+      These are not real archives and would otherwise trigger repeated
+      “File is not a zip file” warnings.
+    * Tracks already-processed inner ZIPs so a failing file is not retried
+      on subsequent passes.
+
     Examples
     --------
     >>> _unzip_nested("S03.zip", "S03_unzipped", keep_archives=True)
@@ -427,11 +478,32 @@ def _unzip_nested(zip_path: str | Path, extract_to: str | Path,
     with zipfile.ZipFile(zip_path) as zf:
         zf.extractall(extract_to)
 
+    # NEW: remember inner ZIPs we've already attempted
+    processed: set[Path] = set()
+
     while True:
-        inners = list(extract_to.rglob("*.zip"))
+        # NEW: collect candidate ZIPs, skipping macOS metadata & already processed ones
+        inners: list[Path] = []
+        for p in extract_to.rglob("*.zip"):
+            if p in processed:
+                continue
+            # Skip macOS Finder cruft: __MACOSX folders and resource-fork files "._*"
+            if "__MACOSX" in p.parts or p.name.startswith("._"):
+                processed.add(p)
+                # Optionally remove tiny resource-fork "._*.zip" files to declutter
+                try:
+                    if p.name.startswith("._") and p.is_file():
+                        p.unlink(missing_ok=True)
+                except OSError:
+                    pass
+                continue
+            inners.append(p)
+
         if not inners:
             break
+
         for inner in inners:
+            processed.add(inner)  # mark first to avoid repeated attempts
             dest = inner.with_suffix("")      # “…/file.zip” → “…/file/”
             dest.mkdir(exist_ok=True)
             try:
@@ -470,6 +542,14 @@ def _convert_dicom_to_nifti(source_dir: Path, output_dir: Path) -> None:
         raise NotImplementedError(
             "dicom2nifti is required for DICOM → NIfTI conversion."
         )
+    
+    # Only consider plain files directly under the series folder
+    dcm_files = [p for p in source_dir.glob("*.dcm") if p.is_file()]
+    if len(dcm_files) < 3:
+        # keep it quiet but informative
+        print(f"[rat_fetch] SKIP – {source_dir} has only {len(dcm_files)} DICOM slice(s)")
+        return
+
     output_dir.mkdir(parents=True, exist_ok=True)
     try:
         dicom2nifti.convert_directory(
@@ -502,7 +582,9 @@ def _relax_dicom2nifti_validators() -> None:
                "disable_validate_sliceincrement",
                "disable_validate_slice_increment",
                "disable_validate_dimensions",
-               "disable_validate_dimension"):
+               "disable_validate_dimension",
+               "disable_validate_slicecount",
+               "disable_validate_slice_count",):
         if hasattr(_dset, fn):
             getattr(_dset, fn)()
 
@@ -517,17 +599,17 @@ def rat_fetch(
 ) -> List[str]:
     """
     Download, recursively extract, and (optionally) convert TRISTAN rat
-    MRI studies from Zenodo (record **15747417**).
+    MRI studies from Zenodo (record **17178063**).
 
     The helper understands the 15 published studies **S01 … S15**.  
-    Pass ``dataset="all"`` (or leave *dataset* empty) to fetch every
-    archive in one go.
+    Pass ``dataset="all"`` (or leave *dataset* empty) to fetch them all.
 
     Parameters
     ----------
     dataset
         ``"S01" … "S15"`` to grab a single study  
-        ``"all"`` or *None* to fetch them all.
+        ``"all"`` or *None* to fetch them all  
+        **or one of the group names below**.
     folder
         Root directory that will hold the ``SXX.zip`` files and the
         extracted DICOM tree.  A sibling directory
@@ -542,11 +624,14 @@ def rat_fetch(
         Forwarded to :func:`_unzip_nested`; set *True* to retain each
         inner ZIP after extraction (useful for auditing).
 
-    Returns
-    -------
-    list[str]
-        Absolute paths to every ``SXX.zip`` that was downloaded
-        (whether new or cached).
+    Study groups
+    ------------
+    In addition to single IDs, you can pass one of these **group names**:
+
+    - ``rifampicin_effect_size`` → S01, S02, S03, S04
+    - ``six_compound``           → S05, S06, S07, S08, S09, S10, S12
+    - ``field_strength``         → S13
+    - ``chronic``                → S11, S14, S15
 
     Examples
     --------
@@ -570,6 +655,16 @@ def rat_fetch(
     ...           unzip=True,
     ...           convert=True)
 
+    **Use a study group (e.g. six compounds)**
+
+    >>> rat_fetch("six_compound", folder="./rat_data", unzip=True, convert=True)
+
+    **Other groups**
+
+    >>> rat_fetch("rifampicin_effect_size", folder="./rat_data", unzip=True)
+    >>> rat_fetch("field_strength", folder="./rat_data", unzip=True, convert=False)
+    >>> rat_fetch("chronic", folder="./rat_data", unzip=True, convert=True)
+
     The call returns the list of ZIP paths; side-effects are files
     extracted (and optionally NIfTI volumes) under *folder*.
     """
@@ -582,7 +677,16 @@ def rat_fetch(
     if convert and not unzip:
         raise ValueError("convert=True requires unzip=True.")
 
-    # ── resolve study IDs ───────────────────────────────────────────────────
+    # ── ADDED: pre-handle group names (without removing original logic) ─────
+    _group_token = None
+    _token = _norm_key(dataset or "all")
+    if _token in _GROUPS:
+        # remember which group was requested; we'll override `studies` later
+        _group_token = _token
+        # set dataset to a valid single ID to avoid the original resolver raising
+        dataset = "S01"
+
+    # ── resolve study IDs (original block kept intact) ──────────────────────
     dataset = (dataset or "all").lower()
     valid_ids = [f"s{i:02d}" for i in range(1, 16)]   # S01 … S15 only
     if dataset == "all":
@@ -594,6 +698,10 @@ def rat_fetch(
             f"Unknown study '{dataset}'. Choose one of "
             f"{', '.join(valid_ids)} or 'all'."
         )
+
+    # ── ADDED: if a group was requested, override `studies` here ────────────
+    if _group_token is not None:
+        studies = _GROUPS[_group_token]
 
     # ── local paths & URL template ──────────────────────────────────────────
     folder     = Path(folder).expanduser().resolve()
@@ -636,11 +744,10 @@ def rat_fetch(
                 for dcm_dir in study_dir.rglob("*"):
                     if not dcm_dir.is_dir():
                         continue
-                    if any(p.suffix.lower() == ".dcm" for p in dcm_dir.iterdir()):
+                    # ── change this condition ──
+                    dcms = [p for p in dcm_dir.glob("*.dcm") if p.is_file()]
+                    if len(dcms) >= 3:   # <- was >= 1
                         rel_out = dcm_dir.relative_to(folder)
-                        _convert_dicom_to_nifti(
-                            dcm_dir,
-                            nifti_root / rel_out,
-                        )
+                        _convert_dicom_to_nifti(dcm_dir, nifti_root / rel_out)
 
     return downloaded
