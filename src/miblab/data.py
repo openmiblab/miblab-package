@@ -584,7 +584,8 @@ def _relax_dicom2nifti_validators() -> None:
                "disable_validate_dimensions",
                "disable_validate_dimension",
                "disable_validate_slicecount",
-               "disable_validate_slice_count",):
+               "disable_validate_slice_count",
+               "disable_validate_slice_direction",):
         if hasattr(_dset, fn):
             getattr(_dset, fn)()
 
