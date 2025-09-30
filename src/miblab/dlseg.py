@@ -100,7 +100,7 @@ def totseg(vol, cutoff=None, **kwargs):
     if not isinstance(vol, list):
         total = _totseg(vol, cutoff, **kwargs)
         # Convert to label
-        label_img = np.zeros(total['kidney_left'].shape, dtype=np.int16)
+        label_img = np.zeros(vol.shape, dtype=np.int16)
         for j, roi in enumerate(total):
             label_img += (j+1) * total[roi].values.astype(np.int16)
         return vreg.volume(label_img, vol.affine)
@@ -124,7 +124,7 @@ def totseg(vol, cutoff=None, **kwargs):
         total[roi] = v
 
     # Convert to label
-    label_img = np.zeros(total['kidney_left'].shape, dtype=np.int16)
+    label_img = np.zeros(vol[0].shape, dtype=np.int16)
     for j, roi in enumerate(total):
         label_img += (j+1) * total[roi].values.astype(np.int16)
 
