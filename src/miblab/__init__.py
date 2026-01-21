@@ -50,9 +50,6 @@ if vreg_installed:
 from miblab import report
 from miblab.report import *
 
-from miblab import data
-from miblab.data import *
-
 import miblab.static
 import miblab.layout
 
