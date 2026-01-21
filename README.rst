@@ -29,12 +29,6 @@ To include pdf reporting tools:
 
     pip install miblab[report]
 
-To include data tools
-
-.. code-block:: console
-
-    pip install miblab[data]
-
 License
 -------
 

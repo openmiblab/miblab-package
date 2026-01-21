@@ -5,7 +5,7 @@ import numpy as np
 import dbdicom as db
 
 from miblab import totseg
-from miblab import zenodo_fetch
+from miblab_data.zenodo import fetch as zenodo_fetch
 
 
 

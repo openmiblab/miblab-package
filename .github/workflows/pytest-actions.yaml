@@ -27,7 +27,7 @@ jobs:
           
       - name: Install miblab
         run: |
-          pip install -e .[report,data,dlseg]
+          pip install -e .[report,dlseg]
           pip list
 
       - name: Test with pytest

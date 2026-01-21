@@ -5,8 +5,8 @@ import tempfile
 import numpy as np
 import vreg
 
-from miblab.data import zenodo_fetch
-from miblab.data import clear_cache_datafiles
+from miblab_data.zenodo import fetch as zenodo_fetch
+from miblab_data.utils import clear_cache_datafiles
 
 
 if sys.version_info < (3, 9):

@@ -6,7 +6,7 @@ import numpy as np
 import vreg
 
 from miblab import kidney_pc_dixon, kidney_pc_dixon_unetr
-from miblab import zenodo_fetch
+from miblab_data.zenodo import fetch as zenodo_fetch
 
 
 

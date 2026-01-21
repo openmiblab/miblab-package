@@ -10,6 +10,7 @@ version = "0.1.0"
 dependencies = [
   'importlib-resources>=1.1.0',
   'tqdm', 
+  'miblab-data',
 ]
 # optional information
 description = "Resources of the open laboratory for medical imaging biomarkers"
