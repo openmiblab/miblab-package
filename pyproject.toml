@@ -51,12 +51,7 @@ requires-python = ">=3.6"
 report = [
   'pylatex',
 ]
-data = [
-  'requests',
-  'osfclient', 
-  'pydicom<3',
-  'dicom2nifti==2.3.4',
-]
+
 dlseg = [
   'requests',
   'osfclient',
