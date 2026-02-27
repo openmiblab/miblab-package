@@ -4,12 +4,10 @@ import shutil
 import csv
 from pathlib import Path
 
-try:
-    import pylatex as pl
-    from pylatex.utils import NoEscape
-    import_error = False
-except:
-    import_error = True
+
+import pylatex as pl
+from pylatex.utils import NoEscape
+
 
 # filepaths need to be identified with importlib_resources
 # rather than __file__ as the latter does not work at runtime
@@ -50,13 +48,8 @@ def force_copy_dir(src, dst):
     shutil.copytree(src, dst)
 
 
-if import_error:
-    inherits_from = dict
-else:
-    inherits_from = pl.Document
 
-
-class Report(inherits_from):
+class Report(pl.Document):
     """
     Generate pdf reports in miblab style. 
 
@@ -144,11 +137,7 @@ class Report(inherits_from):
             department='Section of Medical Imaging and Technologies',
             email='s.sourbron@sheffield.ac.uk',      
         ):
-        if import_error:
-            raise NotImplementedError(
-                'Please install miblab as pip install miblab[report]'
-                'to use this function.'
-            )
+
         super().__init__()
         self.folder = folder
         self.filename = filename
@@ -229,14 +218,10 @@ class Report(inherits_from):
 
 
 def setup(
-        doc:inherits_from, folder, filename, title, subtitle, subject, 
+        doc:pl.Document, folder, filename, title, subtitle, subject, 
         author, affiliation, contact, institute, department, email,     
     ):
-    if import_error:
-        raise NotImplementedError(
-            'Please install miblab as pip install miblab[report]'
-            'to use this function.'
-        )
+
     dst = os.path.abspath("")
     outputpath = os.path.join(folder, filename + '_source')
     force_copy(cover, os.path.join(dst, 'cover.jpg'))
@@ -254,12 +239,9 @@ def setup(
 
 
 def makecover(
-        doc:inherits_from, title, subtitle, subject, author, affiliation 
+        doc:pl.Document, title, subtitle, subject, author, affiliation 
     ):
-    if import_error:
-        raise NotImplementedError(
-            'Please install miblab as pip install miblab[report]'
-            'to use this function.')
+
     # Cover page
     doc.append(NoEscape('\\frontmatter'))
     doc.append(pl.Command('title', title))
@@ -273,13 +255,10 @@ def makecover(
 
 
 def titlepage(
-        doc:inherits_from, folder, filename, contact, institute, 
+        doc:pl.Document, folder, filename, contact, institute, 
         department, email,
     ):
-    if import_error:
-        raise NotImplementedError(
-            'Please install miblab as pip install miblab[report]'
-            'to use this function.')
+
     # Title page
     doc.append(pl.Command('begin', 'titlepage'))
     doc.append(pl.Command('begin', 'center'))
@@ -432,12 +411,8 @@ def table(doc, file, cwidth=None, caption=None, clearpage=False):
             table.append(NoEscape(r'\caption{'+caption+r'} \\'))
 
 
-def build(doc: inherits_from, folder, filename):
+def build(doc: pl.Document, folder, filename):
 
-    if import_error:
-        raise NotImplementedError(
-            'Please install miblab as pip install miblab[report]'
-            'to use this function.')
     path = os.path.abspath("")
     # Create report
     outputpath = os.path.join(folder, filename + '_source')
