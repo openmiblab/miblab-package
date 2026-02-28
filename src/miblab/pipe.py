@@ -8,6 +8,7 @@ from pathlib import Path
 import gc
 
 # Third-Party Packages
+import dask
 import psutil
 from dask.distributed import Client, LocalCluster
 from joblib import parallel_backend
@@ -133,17 +134,17 @@ def adjust_workers(client, min_ram_per_worker=4.0):
     client.wait_for_workers(n_workers, timeout=30)
 
 
-def setup_logging(build, pipeline):
-    dir_logs = os.path.join(build, pipeline)
-    os.makedirs(dir_logs, exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(f"{dir_logs}.log"),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
+# def setup_logging(build, pipeline):
+#     dir_logs = os.path.join(build, pipeline)
+#     os.makedirs(dir_logs, exist_ok=True)
+#     logging.basicConfig(
+#         level=logging.INFO,
+#         format='%(asctime)s - %(levelname)s - %(message)s',
+#         handlers=[
+#             logging.FileHandler(f"{dir_logs}.log"),
+#             logging.StreamHandler(sys.stdout),
+#         ],
+#     )
 
     
 
@@ -156,26 +157,96 @@ def stage_output_dir(build, pipeline, module):
     return dir_output
 
 
-def run_dask_script(run, default_build, pipeline, min_ram_per_worker = 4.0):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=default_build, help="Build folder")
-    args = parser.parse_args()
+def ppln_output_dir(build, pipeline):
 
-    setup_logging(args.build, pipeline)
-
-    client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
-    run(args.build, client)
-    client.close()
+    # Outputs of the ppln
+    dir_output = os.path.join(build, pipeline)
+    os.makedirs(dir_output, exist_ok=True)
+    return dir_output
 
 
-def run_dask_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.0, **args):
+# def run_dask_script(run, default_build, pipeline, min_ram_per_worker = 4.0):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--build", type=str, default=default_build, help="Build folder")
+#     args = parser.parse_args()
+
+#     setup_logging(args.build, pipeline)
+
+#     client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
+#     run(args.build, client)
+#     client.close()
+
+
+# def run_dask_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.0, **args):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--build", type=str, default=default_build, help="Build folder")
+#     for arg, kwargs in args.items():
+#         parser.add_argument(f"--{arg}", **kwargs)
+#     args = parser.parse_args()
+
+#     dir_output = stage_output_dir(args.build, pipeline, module)
+#     logfile = os.path.join(dir_output, 'log.log')
+
+#     logging.basicConfig(
+#         level=logging.INFO,
+#         format='%(asctime)s - %(levelname)s - %(message)s',
+#         handlers=[
+#             logging.FileHandler(logfile),
+#             logging.StreamHandler(sys.stdout),
+#         ],
+#     )
+
+#     client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
+#     optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
+
+#     try:
+#         with parallel_backend('dask'):
+#             run(args.build, client, **optional_args)
+#     finally:
+#         # 1. Wait for joblib/dask to settle
+#         logging.info("Shutting down Dask client and cluster...")
+        
+#         # 2. Get the cluster reference before closing the client
+#         cluster = getattr(client, 'cluster', None)
+        
+#         # 3. Close the client first with a timeout
+#         # This tells workers to stop without immediately nuking the network
+#         client.close(timeout=60) 
+        
+#         # 4. Explicitly scale the cluster to zero before closing
+#         # This is often more successful on Slurm/Stanage
+#         if cluster is not None:
+#             if hasattr(cluster, 'scale'):
+#                 cluster.scale(0)
+#             cluster.close(timeout=60)
+
+#         # 5. Clean up local memory
+#         gc.collect()
+#         logging.info("Shutdown complete.")
+
+
+# def run_script(run, default_build, pipeline):
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--build", type=str, default=default_build, help="Build folder")
+#     args = parser.parse_args()
+
+#     setup_logging(args.build, pipeline)
+
+#     run(args.build)
+
+
+
+
+
+
+def run_client_ppln(run, default_build, pipeline, min_ram_per_worker = 4.0, **args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--build", type=str, default=default_build, help="Build folder")
     for arg, kwargs in args.items():
         parser.add_argument(f"--{arg}", **kwargs)
     args = parser.parse_args()
 
-    dir_output = stage_output_dir(args.build, pipeline, module)
+    dir_output = ppln_output_dir(args.build, pipeline)
     logfile = os.path.join(dir_output, 'log.log')
 
     logging.basicConfig(
@@ -189,28 +260,54 @@ def run_dask_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.
 
     client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
     optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
-    with parallel_backend('dask'):
-        run(args.build, client, **optional_args)
-    
-    # Close
-    cluster = client.cluster
-    client.close()
-    if cluster is not None:
-        cluster.close()
-    gc.collect()
+
+    try:
+        with parallel_backend('dask'):
+            run(args.build, logfile, client, **optional_args)
+    finally:
+        # 1. Wait for joblib/dask to settle
+        logging.info("Shutting down Dask client and cluster...")
+        
+        # 2. Get the cluster reference before closing the client
+        cluster = getattr(client, 'cluster', None)
+        
+        # 3. Close the client first with a timeout
+        # This tells workers to stop without immediately nuking the network
+        client.close(timeout=60) 
+        
+        # 4. Explicitly scale the cluster to zero before closing
+        # This is often more successful on Slurm/Stanage
+        if cluster is not None:
+            if hasattr(cluster, 'scale'):
+                cluster.scale(0)
+            cluster.close(timeout=60)
+
+        # 5. Clean up local memory
+        gc.collect()
+        logging.info("Shutdown complete.")
 
 
-
-
-
-def run_script(run, default_build, pipeline):
+def run_ppln(run, default_build, pipeline, **args):
     parser = argparse.ArgumentParser()
     parser.add_argument("--build", type=str, default=default_build, help="Build folder")
+    for arg, kwargs in args.items():
+        parser.add_argument(f"--{arg}", **kwargs)
     args = parser.parse_args()
 
-    setup_logging(args.build, pipeline)
+    dir_output = ppln_output_dir(args.build, pipeline)
+    logfile = os.path.join(dir_output, 'log.log')
 
-    run(args.build)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(logfile),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
+    optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
+    run(args.build, **optional_args)
 
 
 def run_client_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.0, **args):
@@ -234,15 +331,31 @@ def run_client_stage(run, default_build, pipeline, module, min_ram_per_worker = 
 
     client = get_dask_client(min_ram_per_worker = min_ram_per_worker)
     optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
-    with parallel_backend('dask'):
-        run(args.build, dir_output, client, **optional_args)
-    
-    # Close
-    cluster = client.cluster
-    client.close()
-    if cluster is not None:
-        cluster.close()
-    gc.collect()
+
+    try:
+        with parallel_backend('dask'):
+            run(args.build, logfile, client, **optional_args)
+    finally:
+        # 1. Wait for joblib/dask to settle
+        logging.info("Shutting down Dask client and cluster...")
+        
+        # 2. Get the cluster reference before closing the client
+        cluster = getattr(client, 'cluster', None)
+        
+        # 3. Close the client first with a timeout
+        # This tells workers to stop without immediately nuking the network
+        client.close(timeout=60) 
+        
+        # 4. Explicitly scale the cluster to zero before closing
+        # This is often more successful on Slurm/Stanage
+        if cluster is not None:
+            if hasattr(cluster, 'scale'):
+                cluster.scale(0)
+            cluster.close(timeout=60)
+
+        # 5. Clean up local memory
+        gc.collect()
+        logging.info("Shutdown complete.")
 
 
 def run_stage(run, default_build, pipeline, module, **args):
@@ -265,5 +378,5 @@ def run_stage(run, default_build, pipeline, module, **args):
     )
 
     optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
-    run(args.build, dir_output, **optional_args)
+    run(args.build, logfile, **optional_args)
 
