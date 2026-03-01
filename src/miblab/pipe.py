@@ -55,7 +55,8 @@ def get_dask_client(min_ram_per_worker = 4.0): # Increase this for heavier data
 
     # 3. Calculate per-worker limit and BALANCE cores vs RAM
     # Calculate how many workers we can actually afford
-    max_affordable_workers = int((total_ram_gb * 0.8) // min_ram_per_worker)
+    # Leave 40% for overheads
+    max_affordable_workers = int((total_ram_gb * 0.6) // min_ram_per_worker)
     
     # n_workers becomes the lower of 'what we have' vs 'what we can afford'
     if min(n_workers, max_affordable_workers) < 1:
@@ -66,7 +67,7 @@ def get_dask_client(min_ram_per_worker = 4.0): # Increase this for heavier data
             f"reduce the minimal RAM per worker or increase the total RAM."
         )
     n_workers = min(n_workers, max_affordable_workers)
-    memory_limit_per_worker = f"{(total_ram_gb * 0.9) / n_workers:.2f}GB"
+    memory_limit_per_worker = f"{total_ram_gb / n_workers:.2f}GB"
     
     logging.info(f"Dask Sync: {n_workers} workers | {total_ram_gb:.1f}GB total | {memory_limit_per_worker}/worker")
 
@@ -86,7 +87,7 @@ def get_dask_client(min_ram_per_worker = 4.0): # Increase this for heavier data
 
 
 
-def adjust_workers(client, min_ram_per_worker=4.0):
+def adjust_workers(client, min_ram_per_worker=4.0, overhead_ram=8):
     """
     Re-calculates and scales workers while respecting SLURM/Hardware ceilings.
     Ensures we stay within the 'affordable' memory range.
@@ -106,7 +107,19 @@ def adjust_workers(client, min_ram_per_worker=4.0):
        
         total_ram_gb = psutil.virtual_memory().total / (1024**3)
 
-    total_ram_gb *= 0.7  # Leave a 30% margin for overheads
+    if overhead_ram >= total_ram_gb:
+        raise ValueError(
+            f"The overhead RAM of {overhead_ram} GB is more than the total available RAM of {total_ram_gb} GB.\n"
+            f"Solutions: reduce overhead_ram, or (if working on HPC) ask the scheduler for more RAM."
+        )
+
+    total_ram_gb -= overhead_ram  
+
+    if min_ram_per_worker <= total_ram_gb:
+        raise ValueError(
+            f"Insufficient memory for a single worker.\n"
+            f"Solutions: reduce overhead_ram, reduce min_ram_per_worker, or (if working on HPC) ask the scheduler for more RAM."
+        )
 
     # 3. Calculate 'Affordable' workers based on new RAM requirements
     # Using 80% of total RAM as the budget, similar to your original setup
