@@ -371,7 +371,7 @@ def run_ppln(run, default_build, pipeline, **args):
     )
 
     optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
-    run(args.build, **optional_args)
+    run(args.build, logfile, **optional_args)
 
 def run_stage(run, default_build, pipeline, module, **args):
     parser = argparse.ArgumentParser()
