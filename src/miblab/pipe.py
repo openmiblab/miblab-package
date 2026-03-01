@@ -300,27 +300,7 @@ def run_client_ppln(run, default_build, pipeline, min_ram_per_worker = 4.0, **ar
         logging.info("Shutdown complete.")
 
 
-def run_ppln(run, default_build, pipeline, **args):
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build", type=str, default=default_build, help="Build folder")
-    for arg, kwargs in args.items():
-        parser.add_argument(f"--{arg}", **kwargs)
-    args = parser.parse_args()
 
-    dir_output = ppln_output_dir(args.build, pipeline)
-    logfile = os.path.join(dir_output, 'log.log')
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(logfile),
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
-
-    optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
-    run(args.build, **optional_args)
 
 
 def run_client_stage(run, default_build, pipeline, module, min_ram_per_worker = 4.0, **args):
@@ -370,6 +350,28 @@ def run_client_stage(run, default_build, pipeline, module, min_ram_per_worker = 
         gc.collect()
         logging.info("Shutdown complete.")
 
+
+def run_ppln(run, default_build, pipeline, **args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--build", type=str, default=default_build, help="Build folder")
+    for arg, kwargs in args.items():
+        parser.add_argument(f"--{arg}", **kwargs)
+    args = parser.parse_args()
+
+    dir_output = ppln_output_dir(args.build, pipeline)
+    logfile = os.path.join(dir_output, 'log.log')
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(logfile),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
+    optional_args = {k: v for k, v in vars(args).items() if k != 'build'}
+    run(args.build, **optional_args)
 
 def run_stage(run, default_build, pipeline, module, **args):
     parser = argparse.ArgumentParser()
