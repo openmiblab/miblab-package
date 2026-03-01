@@ -87,7 +87,7 @@ def get_dask_client(min_ram_per_worker = 4.0): # Increase this for heavier data
 
 
 
-def adjust_workers(client, min_ram_per_worker=4.0, overhead_ram=8):
+def adjust_workers(client, min_ram_per_worker=4.0, overhead_ram=4):
     """
     Re-calculates and scales workers while respecting SLURM/Hardware ceilings.
     Ensures we stay within the 'affordable' memory range.
@@ -115,7 +115,7 @@ def adjust_workers(client, min_ram_per_worker=4.0, overhead_ram=8):
 
     total_ram_gb -= overhead_ram  
 
-    if min_ram_per_worker <= total_ram_gb:
+    if min_ram_per_worker > total_ram_gb:
         raise ValueError(
             f"Insufficient memory for a single worker.\n"
             f"Solutions: reduce overhead_ram, reduce min_ram_per_worker, or (if working on HPC) ask the scheduler for more RAM."
